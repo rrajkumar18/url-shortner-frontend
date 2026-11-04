@@ -1,7 +1,7 @@
 "use client";
-import Image from "next/image";
+
 import Link from "next/link";
-import React, { useState } from "react";
+import { useState } from "react";
 import type { SubmitEvent } from "react";
 
 type ShortUrlResponse = {
@@ -50,6 +50,7 @@ export default function Home() {
       const data: ShortUrlResponse = await response.json();
       setShortUrl(data.shortUrl);      
     } catch (err) {
+      console.log(err);
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
@@ -138,6 +139,7 @@ export default function Home() {
                       setCopied(false);
                     }, 2000)
                   } catch (err) {
+                    console.log(err);
                     console.error("Failed to copy link:", error);
                   }
                 }} className="rounded-lg border border-green-300 bg-white cursor-pointer px-4 py-2 text-sm font-medium hover:bg-green-100">

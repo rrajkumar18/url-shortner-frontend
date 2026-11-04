@@ -13,10 +13,12 @@ export default function LoginPage() {
     const [success, setSuccess] = useState("");
 
     useEffect(() => {
-        setFormData({ email:"", password:"" });
-        setShowPassword(false);
-        setError("");
-        setSuccess("");
+        return () => {
+            setFormData({ email:"", password:"" });
+            setShowPassword(false);
+            setError("");
+            setSuccess("");
+        };
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,7 +143,7 @@ export default function LoginPage() {
                 </form>
 
                 <p className="mt-6 text-center text-sm text-gray-600">
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                     <Link href="/register" className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline">
                         Create account
                     </Link>

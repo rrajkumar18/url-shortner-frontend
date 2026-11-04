@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {Link2, LayoutDashboard, BarChart3, UserRound, ChevronDown, LogOut, Settings, Plus, MousePointerClick, Check} from "lucide-react";
+import {Link2, BarChart3, Plus, MousePointerClick, Check} from "lucide-react";
 
 import Header from "@/components/dashboard/DashboardHeader";
 import UrlTable from "@/components/dashboard/UrlTable";

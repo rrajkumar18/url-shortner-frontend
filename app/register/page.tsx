@@ -10,10 +10,12 @@ export default function RegisterPage() {
 
 
     useEffect(() => {
-        setFormData({email:"", firstName:"", lastName:"", password:""});
-        setShowPassword(false);
-        setError("");
-        setSuccess("");
+        return () => {
+            setFormData({email:"", firstName:"", lastName:"", password:""});
+            setShowPassword(false);
+            setError("");
+            setSuccess("");
+        };
     },[]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
