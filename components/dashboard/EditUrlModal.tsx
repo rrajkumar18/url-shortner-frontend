@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Link2, ExternalLink } from "lucide-react";
 import type { ShortUrl } from "./UrlTable";
 
@@ -14,6 +14,11 @@ export default function EditUrlModal({url, onClose, onSave}: EditUrlModalProps) 
     const [shortCode, setShortCode] = useState(url.shortCode);
     const [originalUrl, setOriginalUrl] = useState(url.originalUrl);
     const [error, setError] = useState("");
+    const [origin, setOrigin] = useState("");
+
+    useEffect(() => {
+        setOrigin(window.location.origin);
+    }, []);
 
     const handleSave = () => {
         setError("");
@@ -47,7 +52,7 @@ export default function EditUrlModal({url, onClose, onSave}: EditUrlModalProps) 
         const updatedUrl: ShortUrl = {
             ...url,
             shortCode: code,
-            shortUrl: `https://snipurl.com/${code}`,
+            shortUrl: `${origin}/${code}`,
             originalUrl: destination,
         };
 
@@ -89,7 +94,7 @@ export default function EditUrlModal({url, onClose, onSave}: EditUrlModalProps) 
                         </label>
                         <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 transition focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
                             <span className="whitespace-nowrap border-r border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
-                                snipurl.com/
+                                {origin}/
                             </span>
                             <input id="shortCode" type="text" value={shortCode} onChange={(event) => setShortCode(event.target.value)} placeholder="custom-name" className="min-w-0 flex-1 px-3 py-3 text-sm text-slate-900 outline-none"/>
                         </div>

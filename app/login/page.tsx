@@ -1,25 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { loginUser } from './actions';
 import Link from "next/link";
 
-export default function LoginPage() {
-
-    const router = useRouter();
+export default function LoginPage() {    
 
     const [formData, setFormData] = useState({ email:"", password:"" });
     const [showPassword, setShowPassword] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-
-    useEffect(() => {
-        return () => {
-            setFormData({ email:"", password:"" });
-            setShowPassword(false);
-            setError("");
-            setSuccess("");
-        };
-    }, []);
+    const router = useRouter();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value, });
@@ -29,54 +21,31 @@ export default function LoginPage() {
         e.preventDefault();
         setError("");
         setSuccess("");
+        setIsSubmitting(true);        
 
-        const email = formData.email.trim();
-        const password = formData.password;
+        const searchParams = new URLSearchParams(window.location.search);
+        const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
-        if (!email) {
-            setError("Please enter your email address.");
-            return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            setError("Please enter a valid email address.");
-            return;
-        }
-
-        if (!password) {
-            setError("Please enter your password.");
-            return;
-        }
-        
-        try {
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        email,
-                        password,
-                    }),
-                }
-            );            
-            const data = await response.json().catch(() => ({}));
-            if( !response.ok ) {
-                setError(data.message || data.error || "Login failed. Please check your credentials.");
+        try {        
+            const result = await loginUser(formData);
+            if (!result.success) {
+                setError(result.message);
                 return;
             }
-            setSuccess(data.message || "Login successful!");
-            setFormData({email:"", password:""});
+            setSuccess(result.message);
+            setFormData({                
+                email: '',
+                password: '',
+            });
             setShowPassword(false);
-            setError("");
-            router.push("/dashboard");
+            router.replace(callbackUrl);
         } catch (error) {
-            console.log("login error", error);
-            setError("Unable to Login");
+            console.error('Login error:', error);
+            setError('Unable to login. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
+
     };
 
     const inputClass = "w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
@@ -137,8 +106,8 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full cursor-pointer rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                        Sign in
+                    <button disabled={isSubmitting} type="submit" className="w-full cursor-pointer rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        {isSubmitting ? 'Signing in...' : 'Sign in'}
                     </button>
                 </form>
 

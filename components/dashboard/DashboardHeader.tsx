@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Link2, LayoutDashboard, BarChart3, UserRound, ChevronDown, LogOut, Settings, Menu, X } from "lucide-react";
 
@@ -12,11 +13,38 @@ type HeaderProps = {
 export default function Header({activeTab, setActiveTab}: HeaderProps) {
     const [profileOpen, setProfileOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isLoggingOut, setisLoggingOut] = useState(false);
+
+    const router = useRouter();
+    const API = process.env.BACKEND_URL;
 
     const navClass = (tab: "dashboard" | "analytics") =>
     `flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition 
     ${activeTab === tab ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}
     `;
+
+    const handleLogout = async () => {
+        setisLoggingOut(true);
+        console.log('logout url',`/auth/logout`);
+        try {
+            const response = await fetch(`/api/auth/logout`, {
+                method: "POST",
+            });
+            
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error("Logout:", data.message);
+            }
+
+            router.replace("/login");
+        } catch (error) {
+            console.error("Logout error:", error);
+        } finally {
+            setisLoggingOut(false);
+        }
+        
+    };
 
     return (
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
@@ -67,8 +95,8 @@ export default function Header({activeTab, setActiveTab}: HeaderProps) {
 
                         <button
                             onClick={() => {
-                            setProfileOpen(false);
-                            // Connect your NestJS JWT logout functionality here.
+                                setProfileOpen(false);
+                                handleLogout();
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50">
                             <LogOut size={16} />

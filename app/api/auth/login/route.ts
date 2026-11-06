@@ -1,77 +1,31 @@
-import { NextResponse } from "next/server";
-// import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from 'next/server';
+const API_URL = process.env.BACKEND_URL!;
 
-export async function POST(request: Request) {
-    try {
-        const {email, password} = await request.json();
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-                cache: "no-store"
-            }
-        );
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return NextResponse.json(
-                { message: data.message || data.error || "Login failed." },
-                { status: response.status }
-            );
-        }
+export async function POST(request: NextRequest) {
+    const body = await request.json();
 
-        const accessToken = data.accessToken;
+    const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        cache: 'no-store',
+    });
 
-        if (!accessToken) {
-            return NextResponse.json(
-                { message: "The backend did not return an access token." },
-                { status: 502 }
-            );
-        }
+    const data = await response.json();
 
-        const resp = NextResponse.json({
-            message: data.message || "Login successful.",
-        });
+    const result = NextResponse.json(data, {
+        status: response.status,
+    });
 
-        resp.cookies.set("access_token", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "lax",
-            path: "/",
-            maxAge: 15*60
-        });
+    // Forward backend cookies to the browser,
+    // but let Next.js own the cookies on its hostname.
+    const cookies = response.headers.getSetCookie();
 
-        const setCookie = response.headers.get("refresh_token");
-        if (setCookie) {
-            resp.headers.append("refresh_token", setCookie);
-        }
-
-        return resp;
-
-        // const cookieStore = await cookies();
-        // cookieStore.set("access_token", accessToken, {
-        //     httpOnly: true,
-        //     secure: process.env.NODE_ENV === "production",
-        //     sameSite: "lax",
-        //     path: "/",
-        //     maxAge: 15 * 60,
-        // });
-
-        // return NextResponse.json({
-        //     message: data.message || "Login successful.",
-        // });
-
-    } catch (error) {
-        console.log(error);
-        return NextResponse.json(
-            { message: "Unable to connect to the backend." },
-            { status: 500 }
-        );
+    for (const cookie of cookies) {
+        result.headers.append('Set-Cookie', cookie);
     }
+
+    return result;
 }
