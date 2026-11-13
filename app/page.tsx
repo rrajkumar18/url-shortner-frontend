@@ -3,59 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { SubmitEvent } from "react";
-
-type ShortUrlResponse = {
-  id: number;
-  originalUrl: string;
-  shortCode: string;
-  shortUrl: string;
-  createdAt: string;
-};
+import { useCreateShortUrl } from "@/hooks/useCreateShortUrl";
 
 export default function Home() {
   const [url, setUrl] = useState(""); // For input field
   const [url1, setUrl1] = useState("");
   const [shortUrl, setShortUrl] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { submitUrl, isLoading, error, setError } = useCreateShortUrl();
 
   async function handleSubmit(event:SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setShortUrl("");
-    const originalUrl = url.trim();
-    if(!originalUrl) {
-      setError("Please enter a URL.");
-      return;
+    const data = await submitUrl(url);
+    if (data) {
+      setUrl1(data.originalUrl);
+      setUrl("");
+      setShortUrl(data.shortUrl);
     }
-    setUrl1(originalUrl);
-    setUrl("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('http://localhost:3001/urls',{
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({originalUrl})
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Request failed with status ${response.status}`,
-        );
-      }
-      const data: ShortUrlResponse = await response.json();
-      setShortUrl(data.shortUrl);      
-    } catch (err) {
-      console.log(err);
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-
   }
 
   return (
@@ -139,8 +105,7 @@ export default function Home() {
                       setCopied(false);
                     }, 2000)
                   } catch (err) {
-                    console.log(err);
-                    console.error("Failed to copy link:", error);
+                    console.error("Failed to copy link:", err);
                   }
                 }} className="rounded-lg border border-green-300 bg-white cursor-pointer px-4 py-2 text-sm font-medium hover:bg-green-100">
                 Copy Link

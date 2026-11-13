@@ -17,7 +17,7 @@ export default function EditUrlModal({url, onClose, onSave}: EditUrlModalProps) 
     const [origin, setOrigin] = useState("");
 
     useEffect(() => {
-        setOrigin(window.location.origin);
+        setOrigin(process.env.NEXT_PUBLIC_BACKEND_URL as string);
     }, []);
 
     const handleSave = () => {

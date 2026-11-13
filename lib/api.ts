@@ -1,10 +1,6 @@
 import 'server-only';
 import { getAuthCookies, clearAuthCookies, saveAuthCookies } from '@/lib/auth';
 
-// use it like this
-// import { backendFetch } from '@/lib/backend';
-// const response = await backendFetch('/urls');
-// const urls = await response.json();
 export async function backendFetch(endpoint: string, options: RequestInit = {}){
     const backendUrl = process.env.BACKEND_URL;
 
@@ -18,9 +14,11 @@ export async function backendFetch(endpoint: string, options: RequestInit = {}){
         refreshToken && `refresh_token=${refreshToken}`,
     ].filter(Boolean).join("; ");
 
-    const makeRequest = (cookieHeader: string) => {
+    const makeRequest = (cookiesToSend: string) => {
         const headers = new Headers(options.headers);
-        headers.set('Cookie', cookieHeader);
+        if (cookiesToSend) {
+            headers.set('Cookie', cookiesToSend);
+        }
         return fetch(`${backendUrl}${endpoint}`, {
             ...options,
             headers,
@@ -58,10 +56,16 @@ export async function backendFetch(endpoint: string, options: RequestInit = {}){
     }
 
     // Save newly issued authentication cookies
-    await saveAuthCookies(refreshResponse);
+    const refreshed = await saveAuthCookies(refreshResponse);
+    const newAccessToken = refreshed.accessToken ?? accessToken;
+    const newRefreshToken = refreshed.refreshToken ?? refreshToken;
+    const refreshedCookieHeader = [
+        newAccessToken && `access_token=${newAccessToken}`,
+        newRefreshToken && `refresh_token=${newRefreshToken}`,
+    ].filter(Boolean).join("; ");
 
     // Retry original request with the new access token
-    response = await makeRequest(cookieHeader);
+    response = await makeRequest(refreshedCookieHeader);
 
     return response;
 }

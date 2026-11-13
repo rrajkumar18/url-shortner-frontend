@@ -18,33 +18,53 @@ export async function getAuthCookies() {
 }
 
 export async function clearAuthCookies() {
-    const cookieStore = await cookies();
-    cookieStore.delete("access_token");
-    cookieStore.delete("refresh_token");
+    try {
+        const cookieStore = await cookies();
+        cookieStore.delete("access_token");
+        cookieStore.delete("refresh_token");
+    } catch {
+        // Cookie mutations are not allowed during Server Component renders
+    }
 }
 
-export async function saveAuthCookies(response: Response) {
-    const cookieStore = await cookies();
-
+export async function saveAuthCookies(response: Response): Promise<{
+    accessToken?: string;
+    refreshToken?: string;
+}> {
     const parsedCookies = setCookieParser.parse(
         response.headers.getSetCookie()
     );
 
-    for (const cookie of parsedCookies) {
-        if ( cookie.name !== 'access_token' && cookie.name !== 'refresh_token' ) {
-            continue;
-        }
+    const tokens: { accessToken?: string; refreshToken?: string } = {};
 
-        cookieStore.set({
-            name: cookie.name,
-            value: cookie.value,
-            ...COOKIE_OPTIONS,
-            ...(cookie.maxAge !== undefined && {
-                maxAge: cookie.maxAge,
-            }),
-            ...(cookie.expires && {
-                expires: cookie.expires,
-            }),
-        });
+    for (const cookie of parsedCookies) {
+        if (cookie.name === 'access_token') tokens.accessToken = cookie.value;
+        if (cookie.name === 'refresh_token') tokens.refreshToken = cookie.value;
     }
+
+    try {
+        const cookieStore = await cookies();
+
+        for (const cookie of parsedCookies) {
+            if ( cookie.name !== 'access_token' && cookie.name !== 'refresh_token' ) {
+                continue;
+            }
+
+            cookieStore.set({
+                name: cookie.name,
+                value: cookie.value,
+                ...COOKIE_OPTIONS,
+                ...(cookie.maxAge !== undefined && {
+                    maxAge: cookie.maxAge,
+                }),
+                ...(cookie.expires && {
+                    expires: cookie.expires,
+                }),
+            });
+        }
+    } catch {
+        // Cookie mutations are not allowed during Server Component renders
+    }
+
+    return tokens;
 }

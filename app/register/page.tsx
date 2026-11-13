@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { registerUser } from './actions';
+import { registerUser } from '@/actions/auth';
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({

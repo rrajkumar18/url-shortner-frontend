@@ -1,17 +1,55 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import {Link2, BarChart3, Plus, MousePointerClick, Check} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link2, BarChart3, Plus, MousePointerClick, Check } from "lucide-react";
 
 import Header from "@/components/dashboard/DashboardHeader";
 import UrlTable from "@/components/dashboard/UrlTable";
+import StatCard from "@/components/dashboard/StatsCard";
+import CreateLinkModal from "@/components/dashboard/CreateLinkModal";
+import { getDashboardStats, type DashboardStats } from "@/actions/urls";
+import { useClickStream } from "@/context/ClickStreamContext";
+import AnimateNumber from "@/components/animation/number";
 
 export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState<"dashboard" | "analytics">("dashboard");
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [isStatsLoading, setIsStatsLoading] = useState(true);
+    const { latestClick } = useClickStream();
 
-    return (        
+    useEffect(()=> {
+        if( !latestClick ) return;
+        setStats((prev) => {
+            if( !prev ) return prev;
+            return {
+                ...prev,
+                totalClicks: prev.totalClicks+1
+            };
+        });
+    }, [latestClick]);
+
+    useEffect(() => {
+        let active = true;
+        getDashboardStats().then((result) => {
+            if (!active) return;
+            if (result.success) {
+                setStats(result.data);
+            }
+            setIsStatsLoading(false);
+        });
+        return () => {
+            active = false;
+        };
+    }, [refreshKey]);    
+
+    const formatValue = (value?: number) => {
+        if (isStatsLoading) return "...";
+        return (value ?? 0).toLocaleString();
+    };
+
+    return (
         <main className="min-h-screen bg-slate-50 text-slate-900">
             <Header activeTab={activeTab} setActiveTab={setActiveTab}/>
             <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
@@ -43,7 +81,7 @@ export default function DashboardPage() {
 
                     <StatCard
                         title="Total links"
-                        value="12"
+                        value={formatValue(stats?.totalLinks)}                        
                         description="Total shortened URLs"
                         icon={<Link2 size={20} />}
                         iconStyle="bg-indigo-50 text-indigo-600"
@@ -51,7 +89,8 @@ export default function DashboardPage() {
 
                     <StatCard
                         title="Total clicks"
-                        value="3,011"
+                        // value={formatValue(stats?.totalClicks)}
+                        value={<AnimateNumber value={stats?.totalClicks ?? 0} />}
                         description="Across all your links"
                         icon={<MousePointerClick size={20} />}
                         iconStyle="bg-emerald-50 text-emerald-600"
@@ -59,7 +98,7 @@ export default function DashboardPage() {
 
                     <StatCard
                         title="Active links"
-                        value="10"
+                        value={formatValue(stats?.totalLinks)}
                         description="Currently active URLs"
                         icon={<Check size={20} />}
                         iconStyle="bg-amber-50 text-amber-600"
@@ -68,7 +107,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* URL Table */}
-                    <UrlTable />
+                    <UrlTable refreshKey={refreshKey} />
 
                 </>
                 ) : (
@@ -98,107 +137,11 @@ export default function DashboardPage() {
                 )}
 
             </div>
-            <CreateLinkModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}/>
+            <CreateLinkModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onCreated={() => setRefreshKey((prev) => prev + 1)}
+            />
         </main>
     );
-}
-
-type StatCardProps = {
-    title: string;
-    value: string;
-    description: string;
-    icon: React.ReactNode;
-    iconStyle: string;
-};
-
-function StatCard({title, value, description, icon, iconStyle}: StatCardProps) {
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-500">
-                    {title}
-                </p>
-                <div className={`rounded-xl p-2.5 ${iconStyle}`}>
-                    {icon}
-                </div>
-            </div>
-
-            <p className="mt-4 text-3xl font-bold">
-                {value}
-            </p>
-
-            <p className="mt-1 text-xs text-slate-400">
-                {description}
-            </p>
-
-        </div>
-    );
-}
-
-function CreateLinkModal({isOpen, onClose}:{isOpen:boolean; onClose:()=>void;}) {
-    const [originalUrl, setOriginalUrl] = useState("");
-    const [customAlias, setCustomAlias] = useState("");
-
-    if(!isOpen) return null;
-
-    return(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-                <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-slate-900">
-                        Create New Link
-                    </h2>
-                    <button onClick={onClose} className="text-2xl text-slate-400 hover:text-slate-700">
-                        &times;
-                    </button>
-                </div>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-
-                        console.log({
-                            originalUrl,
-                            customAlias,
-                        });
-
-                        onClose();
-                    }}
-                    className="space-y-5"
-                >
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Destination URL
-                        </label>
-
-                        <input type="url" required placeholder="https://example.com" value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"/>
-                    </div>
-
-                    {/* <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Custom Alias (Optional)
-                        </label>
-
-                        <input
-                            type="text"
-                            placeholder="my-custom-link"
-                            value={customAlias}
-                            onChange={(e) => setCustomAlias(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                        />
-                    </div> */}
-
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                            Cancel
-                        </button>
-
-                        <button type="submit" className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
-                            Create Link
-                        </button>
-                    </div>
-                </form>
-            </div>            
-        </div>
-    );
-
 }
