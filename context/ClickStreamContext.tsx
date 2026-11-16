@@ -18,8 +18,8 @@ const ClickStreamContext = createContext<ClickStreamContextType>({
 export function ClickStreamProvider({ children }: { children: React.ReactNode }) {
     const [latestClick, setLatestClick] = useState<ClickEventPayload | null>(null);
 
-    useEffect(() => {
-        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+    /*useEffect(() => {
+        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
         const eventSource = new EventSource(`${baseUrl}/urls/stats/clicks`, {
             withCredentials: true,
@@ -42,7 +42,7 @@ export function ClickStreamProvider({ children }: { children: React.ReactNode })
         return () => {
             eventSource.close();
         };
-    }, []);
+    }, []);*/
 
     return (
         <ClickStreamContext.Provider value={{ latestClick }}>
