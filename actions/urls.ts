@@ -133,8 +133,7 @@ export async function createShortUrl(input: {originalUrl: string;customAlias?: s
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                originalUrl,
-                // ...(input.customAlias?.trim() && { customAlias: input.customAlias.trim() }),
+                originalUrl
             })
         });
 
