@@ -168,7 +168,7 @@ export async function registerUser(formData: RegisterInput) {
 		console.error('Registration error:', error);
 		return {
 			success: false,
-			message: 'Unable to register. Please try again.',
+			message: 'Unable to register user at the moment. Please try again.',
 		};
   	}
 }
