@@ -19,10 +19,14 @@ export function ClickStreamProvider({ children }: { children: React.ReactNode })
     const [latestClick, setLatestClick] = useState<ClickEventPayload | null>(null);
 
     useEffect(() => {
-        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+        const eventSource = new EventSource('/api/stream/clicks');
+        eventSource.onopen = () => {
+            console.log('SSE connected');
+        };
 
-        const eventSource = new EventSource(`${baseUrl}/urls/stats/clicks`, {
-            withCredentials: true,
+        eventSource.addEventListener('click-stats', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Click stats:', data);
         });
 
         eventSource.onmessage = (event) => {
