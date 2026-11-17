@@ -50,10 +50,9 @@ export default function LivePriceChart({trades, selectedSymbol}: LivePriceChartP
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
 
-    // Track trades already processed by the chart
     const processedTradesRef = useRef<Set<string>>(new Set());
-    // Indicates whether we've initialized live updates after loading history
     const hasInitializedLiveTradesRef = useRef(false);
+    const lastSelectedSymbolRef = useRef<string | null>(null);
 
     const seriesRef = useRef<
         | ISeriesApi<"Line">
@@ -236,22 +235,27 @@ export default function LivePriceChart({trades, selectedSymbol}: LivePriceChartP
 
         // On initial load, historical API data already represents past trades.
         // Mark currently available trades as processed.
-        if (!hasInitializedLiveTradesRef.current) {
+        if (lastSelectedSymbolRef.current !== selectedSymbol) {
             relevantTrades.forEach((trade) => {
                 processedTradesRef.current.add(
                     `${trade.symbol}-${trade.tradeId}`
                 );
             });
 
-            hasInitializedLiveTradesRef.current = true;
+            lastSelectedSymbolRef.current = selectedSymbol;
             return;
         }
 
+        const seenInBatch = new Set<string>();
+
         const newTrades = relevantTrades.filter((trade) => {
             const key = `${trade.symbol}-${trade.tradeId}`;
-
-            return !processedTradesRef.current.has(key);
-        });
+            if (processedTradesRef.current.has(key) || seenInBatch.has(key)) {
+                return false;
+            }
+            seenInBatch.add(key);
+            return true;
+        }).sort((a, b) =>new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime());
 
         for (const trade of newTrades) {
             const key = `${trade.symbol}-${trade.tradeId}`;
@@ -273,6 +277,9 @@ export default function LivePriceChart({trades, selectedSymbol}: LivePriceChartP
             if (!Number.isFinite(eventTimestamp)) continue;
 
             if (series.seriesType() === "Line") {
+                const lastPoint = series.dataByIndex(
+                    series.data().length - 1
+                );                
                 series.update({
                     time: eventTimestamp as Time,
                     value: price,
